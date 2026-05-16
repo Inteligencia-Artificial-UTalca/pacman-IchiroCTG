@@ -154,10 +154,10 @@ PacmanController::getMove(const GameState& game){
 	}
 
 	// Seleccionar Mejor Movimiento 
-	std::cerr << "Huir=" << UtilidadHuir 
+	/*std::cerr << "Huir=" << UtilidadHuir 
           << " Pastilla=" << UtilidadSuperPastilla 
           << " Perseguir=" << UtilidadPerseguir << "\n";
-
+	*/
 	float MayorUtilidad=0.0f;
 	Move MejorMovimiento=PASS;
 	if(MayorUtilidad < UtilidadHuir) {
