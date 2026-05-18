@@ -206,6 +206,8 @@ Status InkyChase::update(){
 		}
 
 	}
+
+	if (MinMovimiento == PASS && !moves.empty()) MinMovimiento = moves[0];
 	Info::getInfo()->out_move = MinMovimiento;
 	return BH_SUCCESS;
 }
