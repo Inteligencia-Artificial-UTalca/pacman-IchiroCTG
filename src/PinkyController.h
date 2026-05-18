@@ -8,6 +8,7 @@
 #include "Controller.h"
 #include "BehaviorTree.h"
 #include <chrono>
+#include <random>
 
 
 
@@ -21,13 +22,13 @@ public:
 };
 
 
-// condicion: ¿el fantasma es comestible?
+// Condicion para cambiar a Huir
 class PinkyPowerpill : public Behavior {
 public:
     virtual Status update() override;
 };
 
-// Asignacion de ciclo de 27s, primeros 7 → Scatter
+// Ciclo de Acciones (Tiempo para cada una) cuando Pinky no esta asustad@
 class PinkyTimeOut : public Behavior {
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
@@ -37,13 +38,18 @@ public:
 };
 
 
-//  movimiento aleatorio al huir
+//  Huir 
 class PinkyFrightened : public Behavior {
+private:
+    std::mt19937 e;
+    std::uniform_int_distribution<int> uniform_dist;
+
 public:
     virtual Status update() override;
+    PinkyFrightened();
 };
 
-// Ir a la esquina de Pinky
+// Dispersion
 class PinkyScatter : public Behavior {
 private:
     std::pair<int,int> target;
@@ -53,7 +59,7 @@ public:
 };
 
 
-// Moverse a 4 casillas ADELANTE de Pacman
+// Persecucion
 class PinkyChase : public Behavior {
 public:
     virtual Status update() override;

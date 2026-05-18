@@ -13,10 +13,10 @@ USGhostController::USGhostController(shared_ptr<Character> character):
 
 USGhostController::~USGhostController(){}
 
-Move USGhostController::AcercarsePoint(const GameState& game, std::pair<int,int> target)const{
+Move USGhostController::AcercarsePoint(const GameState& game, pair<int,int> target)const{
 	int minDist=100000;
 	Move minMove=character->getDirection();
-	std::vector<Move> moves=game.getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
+	vector<Move> moves=game.getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
 
     bool Valido=false;
     for(auto movimiento: moves){
@@ -43,11 +43,11 @@ Move USGhostController::AcercarsePoint(const GameState& game, std::pair<int,int>
 	return minMove;	
 }
 
-Move USGhostController::AlejarsePoint(const GameState& game, std::pair<int,int> target)const{
+Move USGhostController::AlejarsePoint(const GameState& game, pair<int,int> target)const{
 	int maxDist=-1;
 	Move maxMove=character->getDirection();
 	
-    std::vector<Move> moves=game.getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
+    vector<Move> moves=game.getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
 
     bool Valido=false;
     for(auto movimiento: moves){

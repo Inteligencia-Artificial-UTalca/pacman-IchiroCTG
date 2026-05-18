@@ -5,6 +5,8 @@
 #include "PinkyController.h"
 #include "BTGhostController.h"
 
+#define MIN 100000
+
 PinkyController::PinkyController(std::shared_ptr<Character> character)
     : Controller(character), root(std::make_shared<Selector>())
 {
@@ -23,9 +25,9 @@ PinkyController::PinkyController(std::shared_ptr<Character> character)
 
 PinkyController::~PinkyController() {}
 
-Move PinkyController::getMove(const GameState& gs) {
+Move PinkyController::getMove(const GameState& game) {
     Info::getInfo()->in_character = character;
-    Info::getInfo()->in_gamestate = &gs;
+    Info::getInfo()->in_gamestate = &game;
     root->tick();
     return Info::getInfo()->out_move;
 }
@@ -55,60 +57,67 @@ Status PinkyTimeOut::update() {
 }
 
 
-//  Movimiento aleatorio cuando Pac-Man tiene powerpill
+//  Huida movimientos aleatorios
+PinkyFrightened::PinkyFrightened(): Behavior(), e(rand()),uniform_dist(0,3){
+
+}
+
 Status PinkyFrightened::update() {
     auto character = Info::getInfo()->in_character;
     auto gs = Info::getInfo()->in_gamestate;
 
-    std::vector<Move> moves;
-    if (character->getDirection() == PASS) {
-        moves = gs->getMaze().getPossibleMoves(character->getPos());
-    } else {
-        moves = gs->getMaze().getGhostLegalMoves(
-            character->getPos(), character->getDirection()
-        );
+    std::vector<Move> moves = gs->getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
+    bool Valido=false;
+    for(auto movimiento : moves){
+        if(movimiento != PASS){
+            Valido = true;
+            break; 
+        }
     }
+    if(!Valido){moves= gs->getMaze().getPossibleMoves(character->getPos());}
+
+
     Info::getInfo()->out_move = moves[rand() % moves.size()];
     return BH_SUCCESS;
 }
 
-// Pinky Scatter para dirigirse directamente a la esquina los primeros 7 segundos del ciclo
+// Dispersion para dirigirse a una esquina durante 7 segundos
 PinkyScatter::PinkyScatter() : Behavior() {
     target = std::make_pair(-1, -1);
 }
 
 Status PinkyScatter::update() {
-    if (target.first == -1) {
-        auto pills = Info::getInfo()->in_gamestate->getMaze().getPowerPillPositions();
-        target = pills[0];
+    if (target == std::pair{-1,-1}) {
+        auto SuperPastillas = Info::getInfo()->in_gamestate->getMaze().getPowerPillPositions();
+        target = SuperPastillas[0];
     }
 
     auto character = Info::getInfo()->in_character;
-    auto gs        = Info::getInfo()->in_gamestate;
+    auto gs = Info::getInfo()->in_gamestate;
 
-    std::vector<Move> moves;
-    if (character->getDirection() == PASS) {
-        moves = gs->getMaze().getPossibleMoves(character->getPos());
-    } else {
-        moves = gs->getMaze().getGhostLegalMoves(
-            character->getPos(), character->getDirection()
-        );
-        bool hasValid = false;
-        for (auto m : moves) if (m != PASS) { hasValid = true; break; }
-        if (!hasValid) moves = gs->getMaze().getPossibleMoves(character->getPos());
+    std::vector<Move> moves = gs->getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
+    bool Valido=false;
+    for(auto movimiento : moves){
+        if(movimiento != PASS){
+            Valido = true;
+            break; 
+        }
     }
+    if(!Valido){moves= gs->getMaze().getPossibleMoves(character->getPos());}
 
-    float min = 100000000;
+
+
+    float DistanciaMinima = MIN;
     Move  minMove = PASS;
-    for (auto move : moves) {
-        if (move == PASS) break;
-        float dist = euclid2(
+    for (auto Movimiento : moves) {
+        if (Movimiento == PASS) break;
+        float Distancia = euclid2(
             target,
             gs->getMaze().getNodePos(
-                gs->getMaze().getNeighbour(character->getPos(), move)
+                gs->getMaze().getNeighbour(character->getPos(), Movimiento)
             )
         );
-        if (dist < min) { min = dist; minMove = move; }
+        if (Distancia < DistanciaMinima) { DistanciaMinima = Distancia; minMove = Movimiento; }
     }
 
     if (minMove == PASS && !moves.empty()) minMove = moves[0];
@@ -118,54 +127,60 @@ Status PinkyScatter::update() {
 
 // Pinky Chase para cortarle el camino a Pacman
 Status PinkyChase::update() {
-    auto character = Info::getInfo()->in_character;
+    auto Personaje = Info::getInfo()->in_character;
     auto gs = Info::getInfo()->in_gamestate;
 
     // Revisamos posicion de Pacman
-    int  pacPos = gs->getPacmanPos();
-    Move pacDir = static_cast<Move>(gs->getPacmanDir());
+    int  PosicionPacman = gs->getPacmanPos();
+    Move PacmanDirecciones = static_cast<Move>(gs->getPacmanDir());
 
     // calculamos el movimiento de pacman hacia 4 pasos adelante
 
-    int targetPos = pacPos;
-    if (pacDir != PASS) {
+    int PosicionObjetivo = PosicionPacman;
+    if (PacmanDirecciones != PASS) {
         for (int i = 0; i < 4; i++) {
-            int next = gs->getMaze().getNeighbour(targetPos, pacDir);
-            if (next == -1) break;
-            auto nextMoves = gs->getMaze().getPossibleMoves(next);
-            bool hasValid = false;
-            for (auto nm : nextMoves) if (nm != PASS) { hasValid = true; break; }
-            if (!hasValid) break;
-            targetPos = next;
+            int siguiente = gs->getMaze().getNeighbour(PosicionObjetivo, PacmanDirecciones);
+            if (siguiente == -1) break;
+            auto siguienteMovimiento = gs->getMaze().getPossibleMoves(siguiente);
+            bool esValido = false;
+            for (auto nm : siguienteMovimiento){
+             if (nm != PASS) { 
+                esValido = true; 
+                break; 
+                }
+            }
+            if (!esValido) break;
+            PosicionObjetivo = siguiente;
         }
     }
-    auto target = gs->getMaze().getNodePos(targetPos);
+    auto target = gs->getMaze().getNodePos(PosicionObjetivo);
 
-    // revision movimientos legales con fallback
-    std::vector<Move> moves;
-    if (character->getDirection() == PASS) {
-        moves = gs->getMaze().getPossibleMoves(character->getPos());
-    } else {
-        moves = gs->getMaze().getGhostLegalMoves(
-            character->getPos(), character->getDirection()
-        );
-        bool hasValid = false;
-        for (auto m : moves) if (m != PASS) { hasValid = true; break; }
-        if (!hasValid) moves = gs->getMaze().getPossibleMoves(character->getPos());
+    // Movimiento del Fantasma
+    std::vector<Move> moves = gs->getMaze().getGhostLegalMoves(Personaje->getPos(),Personaje->getDirection());
+    bool Valido=false;
+    for(auto movimiento : moves){
+        if(movimiento != PASS){
+            Valido = true;
+            break; 
+        }
     }
+    if(!Valido){moves= gs->getMaze().getPossibleMoves(Personaje->getPos());}
 
-    // moverse hacia el movimiento de pacman predicho
-    float min = 1000000000;
+    // Movimiento hacia Pacman
+    float DistanciaMinima = MIN;
     Move  minMove = PASS;
-    for (auto move : moves) {
-        if (move == PASS) break;
-        float dist = euclid2(
+    for (auto Movimiento : moves) {
+        if (Movimiento == PASS) break;
+        float Distancia = euclid2(
             target,
             gs->getMaze().getNodePos(
-                gs->getMaze().getNeighbour(character->getPos(), move)
+                gs->getMaze().getNeighbour(Personaje->getPos(), Movimiento)
             )
         );
-        if (dist < min) { min = dist; minMove = move; }
+        if (Distancia < DistanciaMinima) { 
+            DistanciaMinima = Distancia; 
+            minMove = Movimiento; 
+        }
     }
 
     if (minMove == PASS && !moves.empty()) minMove = moves[0];
