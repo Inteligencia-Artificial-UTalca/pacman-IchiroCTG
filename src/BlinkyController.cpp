@@ -66,7 +66,7 @@ void BlinkyScatterState::onEnter(const GameState& ){
 Move BlinkyScatterState::onUpdate(const GameState& game){
 	
 	std::vector<Move> moves;
-	const auto pacmanCoord=game.getMaze().getPillPositions()[1];
+	const auto pacmanCoord=game.getMaze().getPowerPillPositions()[2];
 	const auto myPos=character->getPos();
 	//const auto myCoord=game.getMaze().getNodePos(myPos);
 
@@ -182,7 +182,6 @@ BlinkyFMStateMachine::BlinkyFMStateMachine(std::shared_ptr<Character> _character
 Move BlinkyFMStateMachine::update(const GameState& gs){
 	auto t=activeState->getActiveTransition(gs);
 	if(t!=nullptr){
-		std::cerr<<"Transicion"<<std::endl;
 		activeState->onExit(gs);
 		t->onTransition(gs);
 		activeState=t->getNextState();

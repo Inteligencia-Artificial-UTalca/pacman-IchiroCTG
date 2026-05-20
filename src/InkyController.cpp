@@ -97,7 +97,7 @@ Status InkyScatter::update(){
 	
 	if(target==pair{-1,-1}){
 		auto SuperPastillas = Info::getInfo()->in_gamestate->getMaze().getPowerPillPositions();
-		target = SuperPastillas[2];
+		target = SuperPastillas[1];
 	}
 
 	auto character = Info:: getInfo()->in_character;

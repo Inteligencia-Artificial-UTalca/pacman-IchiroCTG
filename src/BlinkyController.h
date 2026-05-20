@@ -14,7 +14,7 @@ public:
 };
 
 
-// Trancisiones
+// Transiciones
 
 	//Pildoras
 class BlinkyPillTransition: public FSMTransition{
