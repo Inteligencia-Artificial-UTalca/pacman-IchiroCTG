@@ -22,7 +22,6 @@ void SueChaseState::onEnter(const GameState& ){
 
 Move SueChaseState::onUpdate(const GameState& game){
 	std::vector<Move> moves;
-	std::cerr<<"Chase"<<std::endl;
 	const auto pacmanCoord=game.getMaze().getNodePos(game.getPacmanPos());
 	const auto myPos=character->getPos();
 	//const auto myCoord=game.getMaze().getNodePos(myPos);
@@ -58,9 +57,8 @@ void SueFeelState::onEnter(const GameState& ){
 }
 
 Move SueFeelState::onUpdate(const GameState& game){
-	std::cerr<<"Feel"<<std::endl;
 	std::vector<Move> movimientos;
-	const auto PowerPillCoord = game.getMaze().getPowerPillPositions()[2];
+	const auto PowerPillCoord = game.getMaze().getPowerPillPositions()[3];
 	const auto myPos = character->getPos();
 
 	if(character->getDirection()==PASS){
@@ -93,16 +91,31 @@ void SueFrightenedState::onEnter(const GameState& ){
 }
 
 Move SueFrightenedState::onUpdate(const GameState& game){
-	std::vector<Move> moves;
-	const auto myPos=character->getPos();
+	
+	std::vector<Move> movimientos;
+	const auto PowerPillCoord = game.getMaze().getPowerPillPositions()[0];
+	const auto myPos = character->getPos();
 
 	if(character->getDirection()==PASS){
-		moves=game.getMaze().getPossibleMoves(myPos);
+		movimientos=game.getMaze().getPossibleMoves(myPos);
 	}else{
-		moves=game.getMaze().getGhostLegalMoves(myPos,character->getDirection());
+		movimientos=game.getMaze().getGhostLegalMoves(myPos,character->getDirection());
 	}
 
-	return moves[rand()%moves.size()];
+	float min=euclid2(
+		game.getMaze().getNodePos(game.getMaze().getNeighbour(myPos,movimientos[0])),
+			PowerPillCoord);
+	int minI=0;
+	for(unsigned int i=1;i<movimientos.size();i++){
+		auto dist=euclid2(
+			game.getMaze().getNodePos(game.getMaze().getNeighbour(myPos,movimientos[i])),
+			PowerPillCoord);
+		if(dist<min){
+			min=dist;
+			minI=i;
+		}
+	}
+	return movimientos[minI];
 }
 SueFrightenedState::~SueFrightenedState() {}
 
@@ -114,7 +127,7 @@ SuePacmanDistanceTransition::SuePacmanDistanceTransition(std::shared_ptr<FSMStat
 bool SuePacmanDistanceTransition::isValid(const GameState& gs){
 	auto pacmanCoord=gs.getMaze().getNodePos(gs.getPacmanPos());
 	auto myCoord=gs.getMaze().getNodePos(gs.getGhostsPos(3));
-	return euclid2(pacmanCoord,myCoord)<10;
+	return euclid2(pacmanCoord,myCoord)<5;
 }
 
 std::shared_ptr<FSMState> SuePacmanDistanceTransition::getNextState(){
@@ -179,7 +192,6 @@ SueStateMachine::SueStateMachine(std::shared_ptr<Character> _character):
 Move SueStateMachine::update(const GameState& gs){
 	auto transition = activeState->getActiveTransition(gs);
 	if(transition!=nullptr){
-		std::cerr<<"Transicion"<<std::endl;
 		activeState->onExit(gs);
 		transition->onTransition(gs);
 		activeState=transition->getNextState();

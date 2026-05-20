@@ -41,8 +41,8 @@ public:
 //  Huir 
 class PinkyFrightened : public Behavior {
 private:
-    std::mt19937 e;
-    std::uniform_int_distribution<int> uniform_dist;
+
+    std::pair<int,int>target;
 
 public:
     virtual Status update() override;

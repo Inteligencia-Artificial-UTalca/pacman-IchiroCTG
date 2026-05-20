@@ -66,7 +66,7 @@ void BlinkyScatterState::onEnter(const GameState& ){
 Move BlinkyScatterState::onUpdate(const GameState& game){
 	
 	std::vector<Move> moves;
-	const auto pacmanCoord=game.getMaze().getPowerPillPositions()[2];
+	const auto pacmanCoord=game.getMaze().getPowerPillPositions()[0];
 	const auto myPos=character->getPos();
 	//const auto myCoord=game.getMaze().getNodePos(myPos);
 

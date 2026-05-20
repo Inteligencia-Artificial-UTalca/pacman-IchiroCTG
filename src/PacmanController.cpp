@@ -87,8 +87,8 @@ PacmanController::getMove(const GameState& game){
 	}
 
 	auto powerPillPositions=game.getMaze().getPowerPillPositions();	
-
-	//Calculo de Utilidades
+	auto pillPositions=game.getMaze().getPillPositions();
+//Calculo de Distancias
 
 	//Calcular Distancia del Fantasma Mas cercano
 	float DistanciaFantasmaMasCercano = MAX;
@@ -106,14 +106,26 @@ PacmanController::getMove(const GameState& game){
 
 	float DistanciaSuperpastillaMasCercana = MAX;
 	pair<int,int> CordenadaPildoraCercana;
-	for(int i=0;i<powerPillPositions.size();i++){
+	for(long unsigned int i=0;i<powerPillPositions.size();i++){
 		float DistanciaPildora = CalcularDistancia(pacmanCoords,powerPillPositions[i]);
 		if(DistanciaSuperpastillaMasCercana>DistanciaPildora){
 			DistanciaSuperpastillaMasCercana=DistanciaPildora;
 			CordenadaPildoraCercana= powerPillPositions[i];
 		}
 	}
+	//Calcular Distancia de la Pildora Mas Cercana
+	float DistanciaPildoraMasCercana = MAX;
+	pair<int,int> CordenadaPildoraMasCercana;
+	for(long unsigned int i=0;i<pillPositions.size();i++){
+		float DistanciaPildora = CalcularDistancia(pacmanCoords,pillPositions[i]);
+		if(DistanciaPildoraMasCercana>DistanciaPildora){
+			DistanciaPildoraMasCercana=DistanciaPildora;
+			CordenadaPildoraMasCercana= pillPositions[i];
+		}
+	}
 	
+// Calculo de Utilidades
+
 	// Calcular Utilidad de Ir A SuperPastilla
 	float UtilidadSuperPastilla= 0.0f; 
 	Move MovimientoSuperPastilla=PASS;
@@ -123,6 +135,17 @@ PacmanController::getMove(const GameState& game){
 		MovimientoSuperPastilla = AcercarsePoint(game, CordenadaPildoraCercana);
 	}
 	
+	//Calcular Utilidad de Ir a Pildora Normal
+	float UtilidadPildora= 0.0f;
+	Move MovimientoPildora=PASS;
+	if(DistanciaFantasmaMasCercano<MAX){
+		float Seguridad = 1.0f/(1.0f + pow(2.718f *0.45f, -DistanciaFantasmaMasCercano+20.0f)); //logistica Inversa
+		float AtractivoPildora = 1.0f/(1.0f + DistanciaPildoraMasCercana); // Atractivo de la pildora, entre mas cerca este mas atractivo para evitar que por la distancia del fantasma se dirija a una pildora lejana
+		UtilidadPildora = Seguridad * AtractivoPildora;
+		if(UtilidadPildora<0) UtilidadPildora=0.0f;
+		MovimientoPildora = AcercarsePoint(game, CordenadaPildoraMasCercana);
+	}
+
 	// Calcular Utilidad de Huir
 	float UtilidadHuir = 0.0f;
 	Move MovimientoHuir=PASS;
@@ -154,10 +177,9 @@ PacmanController::getMove(const GameState& game){
 	}
 
 	// Seleccionar Mejor Movimiento 
-	/*std::cerr << "Huir=" << UtilidadHuir 
-          << " Pastilla=" << UtilidadSuperPastilla 
-          << " Perseguir=" << UtilidadPerseguir << "\n";
-	*/
+	/*std::cerr << "Huir=" << UtilidadHuir << " Pastilla=" << UtilidadSuperPastilla 
+    << " Perseguir=" << UtilidadPerseguir << "\n" << "ComerPildora=" << UtilidadPildora << "\n";*/
+	
 	float MayorUtilidad=0.0f;
 	Move MejorMovimiento=PASS;
 	if(MayorUtilidad < UtilidadHuir) {
@@ -171,6 +193,10 @@ PacmanController::getMove(const GameState& game){
 	if(MayorUtilidad < UtilidadSuperPastilla){
 		MayorUtilidad = UtilidadSuperPastilla;
 		MejorMovimiento = MovimientoSuperPastilla;
+	}
+	if(MayorUtilidad < UtilidadPildora){
+		MayorUtilidad = UtilidadPildora;
+		MejorMovimiento = MovimientoPildora;
 	}
 
 	return MejorMovimiento;

@@ -5,6 +5,8 @@
 #include "PinkyController.h"
 #include "BTGhostController.h"
 
+using namespace std;
+
 #define MIN 100000
 
 PinkyController::PinkyController(std::shared_ptr<Character> character)
@@ -58,27 +60,48 @@ Status PinkyTimeOut::update() {
 
 
 //  Huida movimientos aleatorios
-PinkyFrightened::PinkyFrightened(): Behavior(), e(rand()),uniform_dist(0,3){
-
+PinkyFrightened::PinkyFrightened(): Behavior(){
+    target = std::make_pair(-1, -1);
 }
 
 Status PinkyFrightened::update() {
-    auto character = Info::getInfo()->in_character;
-    auto gs = Info::getInfo()->in_gamestate;
+    if(target==pair{-1,-1}){
+		target = Info::getInfo()->in_gamestate->getMaze().getNodePos(Info::getInfo()->in_gamestate->getGhostsPos(0));
+	}
 
-    std::vector<Move> moves = gs->getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
-    bool Valido=false;
-    for(auto movimiento : moves){
-        if(movimiento != PASS){
-            Valido = true;
-            break; 
-        }
-    }
-    if(!Valido){moves= gs->getMaze().getPossibleMoves(character->getPos());}
+	auto character = Info:: getInfo()->in_character;
+	auto game = Info::getInfo()->in_gamestate;
 
+	vector<Move> Movimientos = game->getMaze().getGhostLegalMoves(character->getPos(),character->getDirection());
+	bool Valido=false;
+	for (auto movimiento : Movimientos){
+		if(movimiento != PASS){
+			Valido=true;
+			break;
+		}
+	}
+	if (!Valido){
+		Movimientos = game->getMaze().getPossibleMoves(character->getPos());
+	}
 
-    Info::getInfo()->out_move = moves[rand() % moves.size()];
-    return BH_SUCCESS;
+	float DistanciaMinima = MIN;
+	Move MinMovimiento = PASS;
+	for(auto Movimiento : Movimientos){
+		if(Movimiento==PASS)break;
+		float Distancia = euclid2(target,game->getMaze().getNodePos(game->getMaze().getNeighbour(character->getPos(),Movimiento)));
+
+		if (Distancia<DistanciaMinima){
+			DistanciaMinima=Distancia;
+			MinMovimiento = Movimiento;
+		}
+
+	}
+	if(MinMovimiento== PASS && !Movimientos.empty()){
+		MinMovimiento = Movimientos[0];
+	}
+	Info::getInfo()->out_move = MinMovimiento;
+	return BH_SUCCESS;
+
 }
 
 // Dispersion para dirigirse a una esquina durante 7 segundos
@@ -89,7 +112,7 @@ PinkyScatter::PinkyScatter() : Behavior() {
 Status PinkyScatter::update() {
     if (target == std::pair{-1,-1}) {
         auto SuperPastillas = Info::getInfo()->in_gamestate->getMaze().getPowerPillPositions();
-        target = SuperPastillas[0];
+        target = SuperPastillas[2];
     }
 
     auto character = Info::getInfo()->in_character;
