@@ -103,7 +103,9 @@ void BlinkyFrightenedState::onEnter(const GameState& ){
 	std::dynamic_pointer_cast<Ghost>(character)->revert();
 }
 Move BlinkyFrightenedState::onUpdate(const GameState& game){
-	std::vector<Move> moves;
+std::vector<Move> moves;
+
+	const auto pacmanCoord=game.getMaze().getNodePos(game.getMaze().getGhostStart()[0]);
 	const auto myPos=character->getPos();
 	//const auto myCoord=game.getMaze().getNodePos(myPos);
 
@@ -113,7 +115,20 @@ Move BlinkyFrightenedState::onUpdate(const GameState& game){
 		moves=game.getMaze().getGhostLegalMoves(myPos,character->getDirection());
 	}
 
-	return moves[rand()%moves.size()];
+	float min=euclid2(
+		game.getMaze().getNodePos(game.getMaze().getNeighbour(myPos,moves[0])),
+			pacmanCoord);
+	int minI=0;
+	for(unsigned int i=1;i<moves.size();i++){
+		auto dist=euclid2(
+			game.getMaze().getNodePos(game.getMaze().getNeighbour(myPos,moves[i])),
+			pacmanCoord);
+		if(dist<min){
+			min=dist;
+			minI=i;
+		}
+	}
+	return moves[minI];
 }
 
 BlinkyFrightenedState::~BlinkyFrightenedState() {
